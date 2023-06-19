@@ -1,25 +1,39 @@
 import 'package:mobx/mobx.dart';
+import 'package:myapp/services/firebase_service.dart';
 
 part 'user_store.g.dart';
 
-class UserStore = _UserStoreBase with _$UserStore;
+class UserStore = UserStoreBase with _$UserStore;
 
-abstract class _UserStoreBase with Store {
-  @observable
-  bool logado = false;
+abstract class UserStoreBase with Store {
+  final _service = FirebaseService();
+
+  @computed
+  bool get logado => email.isNotEmpty;
 
   @observable
   String email = "";
 
+  @observable
+  String erroLogin = "";
+
   @action
-  void login(String value) {
-    logado = true;
-    email = value;
+  Future<bool> login(String email, String senha) async {
+    try {
+      await _service.login(email, senha);
+      this.email = email;
+      erroLogin = "";
+      return true;
+    } catch (e) {
+      erroLogin = e.toString();
+      this.email = "";
+      return false;
+    }
   }
 
   @action
-  void logout() {
-    logado = false;
+  Future<void> logout() async {
+    await _service.logout();
     email = "";
   }
 }

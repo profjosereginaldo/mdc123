@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:myapp/store/user_store.dart';
 import 'package:provider/provider.dart';
 
@@ -38,27 +39,33 @@ class _LoginFormState extends State<LoginForm> {
     return null;
   }
 
-  void _submitForm(BuildContext context) {
+  Future<void> _submitForm(BuildContext context, UserStore userStore) async {
     if (!_keyForm.currentState!.validate()) {
       return;
     }
 
-    UserStore userStore = Provider.of<UserStore>(context, listen: false);
-    userStore.login(_emailController.text);
+    final response = await userStore.login(_emailController.text, _senhaController.text);
 
-    Navigator.pushReplacementNamed(context, '/home');
+    if (!response) return;
+
+    if (context.mounted) Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
   Widget build(BuildContext context) {
+    UserStore userStore = Provider.of<UserStore>(context, listen: false);
+
     return Form(
       key: _keyForm,
       autovalidateMode: AutovalidateMode.always,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
             "Login",
             style: TextStyle(fontSize: 24.0),
+            textAlign: TextAlign.center,
           ),
           TextFormField(
             controller: _emailController,
@@ -68,13 +75,18 @@ class _LoginFormState extends State<LoginForm> {
           TextFormField(
             controller: _senhaController,
             decoration: const InputDecoration(labelText: "Senha"),
-            obscureText: false,
+            obscureText: true,
             validator: _validateSenha,
           ),
+          const SizedBox(height: 24.0),
           ElevatedButton(
-            onPressed: () => _submitForm(context),
+            onPressed: () => _submitForm(context, userStore),
             child: const Text("Enviar"),
           ),
+          const SizedBox(height: 8.0),
+          Observer(builder: (_) {
+            return Text(userStore.erroLogin);
+          })
         ],
       ),
     );
